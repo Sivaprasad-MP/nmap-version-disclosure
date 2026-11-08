@@ -10,7 +10,7 @@ From this project directory:
 # Preview endpoints without contacting them
 python nmap_disclosure.py scan.xml --dry-run
 
-# Perform checks and save JSON evidence
+# Perform checks and save JSON and Excel evidence
 python nmap_disclosure.py scan.xml -o findings.json
 
 # Internal HTTPS with self-signed certificates
@@ -42,7 +42,11 @@ Product-only banners such as `Server: nginx` are retained as evidence but are no
 
 ## Results and controls
 
-The terminal prints endpoint outcomes and unique versions. JSON includes each finding's product, version, source, evidence, confidence, URL, method, and HTTP status. It also records individual request errors, body truncation, redirects, TLS verification, and historical fingerprints.
+The terminal prints endpoint outcomes and unique versions. Each run saves both JSON and an Excel `.xlsx` workbook (no additional packages required). With `-o findings.json`, the workbook is `findings.xlsx`. Use `--excel /path/to/report.xlsx` to choose another location. Dry runs create neither file.
+
+Excel has four filterable sheets with frozen header rows: **Findings** (live version evidence, IP/port, product, version, method, URL and status), **Endpoints** (outcomes, incomplete checks and historical Nmap fingerprints), **Requests** (individual request statuses and errors), and **Scan details** (timestamp, TLS verification and settings). An empty Findings sheet does not imply a clean scan: consult Endpoints and Requests. Evidence is stored as text, never executable formulas.
+
+JSON includes each finding's product, version, source, evidence, confidence, URL, method, and HTTP status. It also records individual request errors, body truncation, redirects, TLS verification, and historical fingerprints.
 
 - `disclosure_found`: at least one live version-bearing response.
 - `no_disclosure_observed`: all configured requests completed without a detected version in inspected evidence. This does not guarantee absence elsewhere.

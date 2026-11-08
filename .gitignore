@@ -12,3 +12,5 @@ findings*.json
 .env.*
 PROJECT_MEMORY.md
 AGENTS.md
+
+*.xlsx

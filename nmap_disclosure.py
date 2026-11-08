@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Recheck HTTP version disclosure on open TCP endpoints in an Nmap report."""
 import argparse
+from excel_report import write_excel
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -218,6 +219,7 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('report', type=Path, help='Existing Nmap XML (preferred), normal text, or grepable report')
     p.add_argument('-o', '--output', type=Path, default=Path('disclosure-report.json'))
+    p.add_argument('--excel', type=Path, help='Excel output path (default: JSON output name with .xlsx extension)')
     p.add_argument('--dry-run', action='store_true', help='List selected targets without network requests')
     p.add_argument('--all-open-tcp', action='store_true', help='Try HTTP on every reported open TCP port')
     p.add_argument('--insecure', action='store_true', help='Accept untrusted HTTPS certificates; recorded in report')
@@ -240,8 +242,12 @@ def main(argv=None):
         if args.dry_run:
             print(json.dumps([asdict(t) for t in targets], indent=2))
             return 0
-        if args.output.resolve() == args.report.resolve():
-            p.error('Output must not overwrite the input report')
+        excel_path = args.excel or args.output.with_suffix('.xlsx')
+        paths = [args.report.resolve(), args.output.resolve(), excel_path.resolve()]
+        if len(set(paths)) != len(paths):
+            p.error('Input, JSON output, and Excel output must have different paths')
+        if excel_path.suffix.lower() != '.xlsx':
+            p.error('Excel output must have an .xlsx extension')
         print(f'Checking {len(targets)} endpoints...', file=sys.stderr)
         with ThreadPoolExecutor(max_workers=args.workers) as pool:
             results = list(pool.map(lambda t: scan(t, args), targets))
@@ -253,11 +259,13 @@ def main(argv=None):
                       results=results)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+        write_excel(report, excel_path)
         for result in results:
             t = result['target']
             versions = sorted({f"{f['product']}/{f['version']}" for f in result['findings']})
             print(f"{t['address']}:{t['port']} ({t['scheme']}) {result['outcome']} [coverage: {result['coverage']}] " + ', '.join(versions))
         print(f'Report: {args.output.resolve()}')
+        print(f'Excel: {excel_path.resolve()}')
         if any(r['coverage'] != 'complete' for r in results):
             return 2
         return 1 if args.fail_on_finding and any(r['findings'] for r in results) else 0

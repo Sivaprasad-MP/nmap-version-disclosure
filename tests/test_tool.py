@@ -74,9 +74,20 @@ class Integration(unittest.TestCase):
     def test_live(self):
         self.assertEqual(self.run_cli('--vhost','app.example.test','--fail-on-finding'),1)
         self.assertEqual(self.result()['outcome'],'disclosure_found')
+        self.assertTrue(self.output.with_suffix('.xlsx').is_file())
         self.assertEqual(len(Handler.hits),3)
         self.assertTrue(all(h.startswith('app.example.test:') for h in Handler.hits))
         self.assertNotIn('0.0.1',{f['version'] for f in self.result()['findings']})
+    def test_custom_excel_path(self):
+        dest = Path(self.temp.name)/'custom.xlsx'
+        self.assertEqual(self.run_cli('--excel', str(dest)), 0)
+        self.assertTrue(dest.is_file())
+
+    def test_output_collision(self):
+        with self.assertRaises(SystemExit):
+            self.run_cli('--excel',str(self.input))
+        self.assertEqual(Handler.hits,[])
+
     def test_redirect(self):
         Handler.mode = 'redirect'
         self.assertEqual(self.run_cli(),0)
