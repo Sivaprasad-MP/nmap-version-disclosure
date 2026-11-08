@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+lab-artifacts/
+*-report.json
+findings*.json
+*.pem
+*.key
+.env
+.env.*
+PROJECT_MEMORY.md
+AGENTS.md
